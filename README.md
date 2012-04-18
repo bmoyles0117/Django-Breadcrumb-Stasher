@@ -8,27 +8,44 @@ it would certainly be nice if you automatically returned the user to the DESIRED
 In your views.py file, you could see something like the following. Please note that this will most likely 
 not work by simply dropping it into your current code, although I'd definitely smile if it did!
 
+The real power in this plugin, is that the breadcrumbs could originate from multiple sources, and still
+all lead back to the original stasher.
+
 ```python
 import breadcrumb_stasher
 from django.shortcuts import render, redirect
 
-# No breadcrumbs existed, so it will fall back to here according to the logic in required_action(request)
+# No breadcrumbs existed, the views use this view as the fallback url
 def default_action(request):
 	return render(request, 'default_action.html')
 
 @breadcrumb_stasher.stash
 def desired_action(request):
-	if request.session.get('completed_requirements', '0') != '1':
-		return redirect('views.required_action')
+	# First requirement must be met
+	if request.session.get('completed_requirement_1', '0') != '1':
+		return redirect('views.required_action_1')
+
+	# Then perhaps another
+	if request.session.get('completed_requirement_2', '0') != '1':
+		return redirect('views.required_action_2')
 
 	return render(request, 'desired_action.html')
 
-def required_action(request):
+def required_action_1(request):
 	if request.method == 'POST':
-		request.session['completed_requirements'] = '1'
+		request.session['completed_requirement_1'] = '1'
 
 		# Redirect to the most recent breadcrumb, fallback to views.default_action if none are found!
 		return breadcrumb_stasher.redirect(request, 'views.default_action')
 
-	return render(request, 'required_action.html')
+	return render(request, 'required_action_1.html')
+
+def required_action_2(request):
+	if request.method == 'POST':
+		request.session['completed_requirement_2'] = '1'
+
+		# Redirect to the most recent breadcrumb, fallback to views.default_action if none are found!
+		return breadcrumb_stasher.redirect(request, 'views.default_action')
+
+	return render(request, 'required_action_2.html')
 ```
